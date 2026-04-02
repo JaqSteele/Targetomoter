@@ -1,0 +1,161 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from datetime import datetime
+
+
+def simulate_goal_progress(start_progress: int, daily_rate: int, days: int):
+    """
+    Simulate a user's goal progress over a set number of days.
+    Returns the progress values and the day the simulation ended.
+    """
+    progress = [start_progress]
+
+    for day in range(1, days + 1):
+        next_value = progress[-1] + daily_rate
+        progress.append(min(next_value, 100))
+
+        if progress[-1] >= 100:
+            return progress, day
+
+    return progress, days
+
+
+def plot_goal_progress(progress):
+    """
+    Plot simulated goal progress over time.
+    """
+    plt.figure(figsize=(10, 5))
+    plt.plot(progress, label="Progress (%)")
+    plt.axhline(100, color="r", linestyle="--", label="Goal Achieved")
+    plt.title("Simulated Goal Progress Over Time")
+    plt.xlabel("Days")
+    plt.ylabel("Progress (%)")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+def check_progress_for_motivation(current_progress: int, days_passed: int, total_days: int) -> str:
+    """
+    Return a motivational message based on progress and time passed.
+    """
+    halfway_point = total_days / 2
+
+    if days_passed >= halfway_point and current_progress < 50:
+        return "Keep going! You're halfway through the goal period - keep pushing toward your goal."
+    elif current_progress >= 50:
+        return "Great job! You're more than halfway there."
+    else:
+        return "You're on track. Keep it steady."
+
+
+def generate_progress_dataframe(days: int = 30):
+    """
+    Generate example cumulative user progress data.
+    """
+    data = {
+        "Day": range(1, days + 1),
+        "Progress": np.random.randint(0, 5, days).cumsum()
+    }
+    return pd.DataFrame(data)
+
+
+def plot_progress_trend(df: pd.DataFrame):
+    """
+    Plot cumulative progress trend over time.
+    """
+    plt.figure(figsize=(10, 5))
+    plt.plot(df["Day"], df["Progress"], label="Cumulative Progress (%)")
+    plt.xlabel("Day")
+    plt.ylabel("Progress (%)")
+    plt.title("User Goal Completion Trend Over 30 Days")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
+class MockDatabase:
+    """
+    Simple mock database used to demonstrate app logging behaviour.
+    """
+    def __init__(self):
+        self.check_ins = []
+        self.feedback = []
+        self.goals = {
+            ("user_1", "goal_1"): {"progress": 40, "status": "In Progress"}
+        }
+
+    def insert_check_in(self, record):
+        self.check_ins.append(record)
+
+    def insert_feedback(self, record):
+        self.feedback.append(record)
+
+    def get_goal(self, user_id, goal_id):
+        return self.goals.get((user_id, goal_id), {"progress": 0, "status": "In Progress"})
+
+    def update_goal(self, user_id, goal_id, updated_goal):
+        self.goals[(user_id, goal_id)] = updated_goal
+
+
+def log_check_in(database: MockDatabase, user_id: str):
+    """
+    Log a user check-in.
+    """
+    check_in_data = {
+        "user_id": user_id,
+        "check_in_time": datetime.now()
+    }
+    database.insert_check_in(check_in_data)
+    return "Check-in logged."
+
+
+def log_goal_progress(database: MockDatabase, user_id: str, goal_id: str, progress_increment: int):
+    """
+    Update a user's goal progress.
+    """
+    goal_data = database.get_goal(user_id, goal_id)
+    goal_data["progress"] += progress_increment
+
+    if goal_data["progress"] >= 100:
+        goal_data["progress"] = 100
+        goal_data["status"] = "Complete"
+
+    database.update_goal(user_id, goal_id, goal_data)
+    return f"Progress updated: {goal_data['progress']}%"
+
+
+def log_feedback_response(database: MockDatabase, user_id: str, message_id: str, feedback: str):
+    """
+    Log a user's response to a motivational message.
+    """
+    feedback_data = {
+        "user_id": user_id,
+        "message_id": message_id,
+        "feedback": feedback,
+        "response_time": datetime.now()
+    }
+    database.insert_feedback(feedback_data)
+    return "Feedback logged."
+
+
+if __name__ == "__main__":
+    # Simulate goal progress
+    progress, end_day = simulate_goal_progress(start_progress=10, daily_rate=3, days=30)
+    print(f"Goal reached on day: {end_day}")
+    plot_goal_progress(progress)
+
+    # Check motivation logic
+    motivation_message = check_progress_for_motivation(current_progress=40, days_passed=15, total_days=30)
+    print("Motivational Message:", motivation_message)
+
+    # Plot user trend example
+    df = generate_progress_dataframe()
+    plot_progress_trend(df)
+
+    # Demonstrate mock backend logging
+    db = MockDatabase()
+    print(log_check_in(db, "user_1"))
+    print(log_goal_progress(db, "user_1", "goal_1", 20))
+    print(log_feedback_response(db, "user_1", "message_1", "Helpful"))
