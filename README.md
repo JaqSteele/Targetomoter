@@ -57,7 +57,6 @@ Potential future improvements include:
 ## Academic Context
 This repository supports my MSc dissertation project on the design and development of the Targetomoter app prototype.
 
-##Note
 ## Note
 This repository represents a prototype system developed during my MSc dissertation and is not a full production application.
 
